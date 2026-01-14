@@ -325,43 +325,99 @@
   }
 
   /**
+   * Show toast notification
+   * 
+   * @param {string} message - Message to display
+   * @param {boolean} isError - Whether it's an error notification
+   */
+  function showToast(message, isError = false) {
+    // Remove existing toast if any
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast ${isError ? 'error' : ''}`;
+    toast.innerHTML = `
+      <span class="toast-icon">${isError ? '✕' : '✓'}</span>
+      <span>${message}</span>
+    `;
+    
+    // Ensure body exists and append toast
+    if (!document.body) {
+      console.error('Document body not found');
+      return;
+    }
+    
+    document.body.appendChild(toast);
+    
+    // Force reflow to ensure initial styles are applied
+    toast.offsetHeight;
+    
+    // Small delay to ensure DOM is ready, then trigger animation
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 50);
+    
+    // Remove toast after animation
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast && toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 2500);
+  }
+
+  /**
    * Show visual feedback when copying
    * 
    * @param {HTMLElement} element - Element that was clicked
    */
   function showCopyFeedback(element) {
-    const originalText = element.textContent;
-    const originalBorder = element.style.borderColor;
+    // Show toast notification
+    showToast('Скопировано!');
     
-    element.textContent = '✓ Скопировано!';
+    // Also briefly highlight the element
+    const originalBorder = element.style.borderColor;
     element.style.borderColor = '#22c55e';
     element.style.transition = 'border-color 0.2s';
     
     setTimeout(() => {
-      element.textContent = originalText;
       element.style.borderColor = originalBorder || '';
-    }, 1500);
+    }, 500);
   }
 
   /**
    * Handle output click (copy to clipboard)
    */
   function handleOutputClick(event) {
-    if (event.target.classList.contains('output')) {
-      const text = event.target.textContent.trim();
+    const target = event.target;
+    
+    // Check if clicked element or its parent has 'output' class
+    const outputElement = target.classList.contains('output') 
+      ? target 
+      : target.closest('.output');
+    
+    if (outputElement) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const text = outputElement.textContent.trim();
       if (text) {
         copyToClipboard(text).then(success => {
           if (success) {
-            showCopyFeedback(event.target);
+            showCopyFeedback(outputElement);
           } else {
             console.error('Failed to copy text to clipboard');
-            // Show error feedback
-            const originalText = event.target.textContent;
-            event.target.textContent = 'Ошибка копирования';
-            setTimeout(() => {
-              event.target.textContent = originalText;
-            }, 1000);
+            showToast('Ошибка копирования', true);
           }
+        }).catch(err => {
+          console.error('Copy error:', err);
+          showToast('Ошибка копирования', true);
         });
       }
     }
