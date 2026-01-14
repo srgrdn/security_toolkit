@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Security Toolkit 2.0</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #020617;
+      padding: 24px;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.5);
+    }
+    h1 { font-size: 20px; margin-bottom: 12px; }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px;
+      border-radius: 10px;
+      background: #1e293b;
+      text-align: center;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .tab.active { background: #38bdf8; color: #020617; font-weight: 600; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    label { font-size: 14px; }
+    input[type="number"], input[type="text"] {
+      width: 140px;
+      padding: 6px;
+      border-radius: 8px;
+      border: none;
+      background: #1e293b;
+      color: #e5e7eb;
+    }
+    input[type="checkbox"] { transform: scale(1.15); }
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      border: none;
+      background: #38bdf8;
+      color: #020617;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .output {
+      margin-top: 14px;
+      background: #020617;
+      border: 1px dashed #334155;
+      border-radius: 14px;
+      padding: 12px;
+      font-family: monospace;
+      word-break: break-all;
+      cursor: pointer;
+    }
+    .bar { height: 6px; border-radius: 6px; background: #334155; overflow: hidden; margin-top: 6px; }
+    .bar span { display: block; height: 100%; width: 0; background: #22c55e; }
+    .hint { font-size: 12px; color: #94a3b8; margin-top: 6px; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>🛡 Security Toolkit 2.0</h1>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="password">Пароль</div>
+    <div class="tab" data-tab="passphrase">Passphrase</div>
+    <div class="tab" data-tab="check">Проверка</div>
+  </div>
+
+  <!-- PASSWORD GENERATOR -->
+  <div class="section active" id="password">
+    <div class="row"><label>Длина</label><input id="pwdLength" type="number" min="6" max="64" value="16"></div>
+    <div class="row"><label>a-z</label><input id="pLower" type="checkbox" checked></div>
+    <div class="row"><label>A-Z</label><input id="pUpper" type="checkbox" checked></div>
+    <div class="row"><label>0-9</label><input id="pNumbers" type="checkbox" checked></div>
+    <div class="row"><label>Символы</label><input id="pSymbols" type="checkbox"></div>
+    <button onclick="genPassword()">Сгенерировать</button>
+    <div id="pwdResult" class="output"></div>
+    <div class="bar"><span id="pwdStrength"></span></div>
+  </div>
+
+  <!-- PASSPHRASE -->
+  <div class="section" id="passphrase">
+    <div class="row"><label>Слова</label><input id="wordCount" type="number" min="2" max="6" value="4"></div>
+    <div class="row"><label>Разделитель</label><input id="separator" type="text" value="-"></div>
+    <button onclick="genPassphrase()">Сгенерировать</button>
+    <div id="phraseResult" class="output"></div>
+  </div>
+
+  <!-- CHECK -->
+  <div class="section" id="check">
+    <div class="row"><label>Пароль</label><input id="checkInput" type="text"></div>
+    <button onclick="checkPassword()">Проверить</button>
+    <div id="checkResult" class="output"></div>
+    <div class="bar"><span id="checkStrength"></span></div>
+  </div>
+
+  <div class="hint">Клик по результату — копирование</div>
+</div>
+
+<script>
+  const WORDS = ['solar','nebula','orbit','quantum','vector','kernel','matrix','signal','crypto','linux','shadow','node'];
+  const SETS = {
+    lower: 'abcdefghijklmnopqrstuvwxyz',
+    upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    numbers: '0123456789',
+    symbols: '!@#$%^&*()_+-='
+  };
+
+  function rand(max) {
+    const a = new Uint32Array(1);
+    crypto.getRandomValues(a);
+    return a[0] % max;
+  }
+
+  function strength(p) {
+    let s = p.length * 4;
+    if (/[a-z]/.test(p)) s += 10;
+    if (/[A-Z]/.test(p)) s += 10;
+    if (/[0-9]/.test(p)) s += 10;
+    if (/[^a-zA-Z0-9]/.test(p)) s += 15;
+    return Math.min(s, 100);
+  }
+
+  function genPassword() {
+    let pool = '';
+    let out = '';
+    if (pLower.checked) pool += SETS.lower;
+    if (pUpper.checked) pool += SETS.upper;
+    if (pNumbers.checked) pool += SETS.numbers;
+    if (pSymbols.checked) pool += SETS.symbols;
+    if (!pool) return;
+    for (let i = 0; i < pwdLength.value; i++) out += pool[rand(pool.length)];
+    pwdResult.textContent = out;
+    pwdStrength.style.width = strength(out) + '%';
+  }
+
+  function genPassphrase() {
+    const sep = separator.value || '-';
+    let res = [];
+    for (let i = 0; i < wordCount.value; i++) res.push(WORDS[rand(WORDS.length)]);
+    phraseResult.textContent = res.join(sep);
+  }
+
+  function checkPassword() {
+    const p = checkInput.value;
+    if (!p) return;
+    const s = strength(p);
+    checkResult.textContent = s < 40 ? 'Слабый пароль' : s < 70 ? 'Средний пароль' : s < 90 ? 'Надёжный пароль' : 'Очень надёжный пароль';
+    checkStrength.style.width = s + '%';
+  }
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById(t.dataset.tab).classList.add('active');
+    };
+  });
+
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('output')) {
+      navigator.clipboard?.writeText(e.target.textContent);
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 16px;
+}
+
+.card {
+  background: #020617;
+  padding: 24px;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.5);
+}
+
+h1 { 
+  font-size: 20px; 
+  margin-bottom: 12px; 
+  margin-top: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  background: #1e293b;
+  text-align: center;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.tab:hover {
+  background: #334155;
+}
+
+.tab.active { 
+  background: #38bdf8; 
+  color: #020617; 
+  font-weight: 600; 
+}
+
+.section { 
+  display: none; 
+}
+
+.section.active { 
+  display: block; 
+}
+
+.row { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 10px; 
+}
+
+label { 
+  font-size: 14px; 
+}
+
+input[type="number"], 
+input[type="text"] {
+  width: 140px;
+  padding: 6px;
+  border-radius: 8px;
+  border: none;
+  background: #1e293b;
+  color: #e5e7eb;
+  font-size: 14px;
+}
+
+input[type="checkbox"] { 
+  transform: scale(1.15); 
+  cursor: pointer;
+}
+
+button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: #38bdf8;
+  color: #020617;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #22d3ee;
+}
+
+button:active {
+  background: #06b6d4;
+}
+
+.output {
+  margin-top: 14px;
+  background: #020617;
+  border: 1px dashed #334155;
+  border-radius: 14px;
+  padding: 12px;
+  font-family: monospace;
+  word-break: break-all;
+  cursor: pointer;
+  min-height: 20px;
+  transition: border-color 0.2s;
+}
+
+.output:hover {
+  border-color: #38bdf8;
+}
+
+.result-text {
+  margin-top: 14px;
+  background: #020617;
+  border: 1px dashed #334155;
+  border-radius: 14px;
+  padding: 12px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  word-break: break-all;
+  min-height: 20px;
+  text-align: center;
+}
+
+.bar { 
+  height: 6px; 
+  border-radius: 6px; 
+  background: #334155; 
+  overflow: hidden; 
+  margin-top: 6px; 
+}
+
+.bar span { 
+  display: block; 
+  height: 100%; 
+  width: 0; 
+  background: #22c55e; 
+  transition: width 0.3s;
+}
+
+.hint { 
+  font-size: 12px; 
+  color: #94a3b8; 
+  margin-top: 6px; 
+  text-align: center; 
+}

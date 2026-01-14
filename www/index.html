@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security Toolkit 2.0</title>
+  <meta name="description" content="Secure password and passphrase generator" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="bip39-words.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+<div class="card">
+  <h1>🛡 Security Toolkit 2.0</h1>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="password">Пароль</div>
+    <div class="tab" data-tab="passphrase">Passphrase</div>
+    <div class="tab" data-tab="check">Проверка</div>
+  </div>
+
+  <!-- PASSWORD GENERATOR -->
+  <div class="section active" id="password">
+    <div class="row"><label>Длина</label><input id="pwdLength" type="number" min="6" max="64" value="16"></div>
+    <div class="row"><label>a-z</label><input id="pLower" type="checkbox" checked></div>
+    <div class="row"><label>A-Z</label><input id="pUpper" type="checkbox" checked></div>
+    <div class="row"><label>0-9</label><input id="pNumbers" type="checkbox" checked></div>
+    <div class="row"><label>Символы</label><input id="pSymbols" type="checkbox"></div>
+    <button id="genPwdBtn">Сгенерировать</button>
+    <div id="pwdResult" class="output"></div>
+    <div class="bar"><span id="pwdStrength"></span></div>
+  </div>
+
+  <!-- PASSPHRASE -->
+  <div class="section" id="passphrase">
+    <div class="row"><label>Слова</label><input id="wordCount" type="number" min="3" max="12" value="6"></div>
+    <div class="row"><label>Разделитель</label><input id="separator" type="text" value="-" maxlength="10"></div>
+    <button id="genPhraseBtn">Сгенерировать</button>
+    <div id="phraseResult" class="output"></div>
+    <div class="hint" id="phraseHint"></div>
+  </div>
+
+  <!-- CHECK -->
+  <div class="section" id="check">
+    <div class="row"><label>Пароль</label><input id="checkInput" type="text" maxlength="256"></div>
+    <button id="checkBtn">Проверить</button>
+    <div id="checkResult" class="result-text"></div>
+    <div class="bar"><span id="checkStrength"></span></div>
+  </div>
+
+  <div class="hint">Клик по результату — копирование</div>
+</div>
+</body>
+</html>
