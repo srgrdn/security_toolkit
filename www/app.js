@@ -277,16 +277,91 @@
   }
 
   /**
+   * Copy text to clipboard with fallback for older browsers
+   * 
+   * @param {string} text - Text to copy
+   * @returns {Promise<boolean>} Success status
+   */
+  function copyToClipboard(text) {
+    // Modern Clipboard API (requires secure context)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text)
+        .then(() => true)
+        .catch(err => {
+          console.warn('Clipboard API failed, trying fallback:', err);
+          return fallbackCopyToClipboard(text);
+        });
+    }
+    
+    // Fallback for older browsers or insecure contexts
+    return Promise.resolve(fallbackCopyToClipboard(text));
+  }
+
+  /**
+   * Fallback copy method using execCommand
+   * 
+   * @param {string} text - Text to copy
+   * @returns {boolean} Success status
+   */
+  function fallbackCopyToClipboard(text) {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      return successful;
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Show visual feedback when copying
+   * 
+   * @param {HTMLElement} element - Element that was clicked
+   */
+  function showCopyFeedback(element) {
+    const originalText = element.textContent;
+    const originalBorder = element.style.borderColor;
+    
+    element.textContent = '✓ Скопировано!';
+    element.style.borderColor = '#22c55e';
+    element.style.transition = 'border-color 0.2s';
+    
+    setTimeout(() => {
+      element.textContent = originalText;
+      element.style.borderColor = originalBorder || '';
+    }, 1500);
+  }
+
+  /**
    * Handle output click (copy to clipboard)
    */
   function handleOutputClick(event) {
     if (event.target.classList.contains('output')) {
       const text = event.target.textContent.trim();
-      if (text && navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-          // Visual feedback could be added here
-        }).catch(err => {
-          console.error('Failed to copy:', err);
+      if (text) {
+        copyToClipboard(text).then(success => {
+          if (success) {
+            showCopyFeedback(event.target);
+          } else {
+            console.error('Failed to copy text to clipboard');
+            // Show error feedback
+            const originalText = event.target.textContent;
+            event.target.textContent = 'Ошибка копирования';
+            setTimeout(() => {
+              event.target.textContent = originalText;
+            }, 1000);
+          }
         });
       }
     }

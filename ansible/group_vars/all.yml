@@ -1,0 +1,23 @@
+---
+# Variables for all hosts
+
+# Application settings
+app_name: password-gen
+deploy_user: deploy
+deploy_path: /opt/password-gen
+
+# Docker settings
+docker_compose_version: "v2.24.0"
+
+# Service settings
+http_port: 80
+https_port: 443
+
+# Deployment settings
+rebuild_images: false
+check_health: true
+
+# SSL settings (if needed)
+ssl_enabled: false
+ssl_cert_path: /etc/letsencrypt/live
+ssl_domain: ""

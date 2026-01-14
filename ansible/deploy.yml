@@ -1,0 +1,180 @@
+---
+- name: Deploy Password Generator
+  hosts: password_gen_servers
+  become: yes
+  vars:
+    app_name: password-gen
+    app_user: "{{ ansible_user | default('deploy') }}"
+    deploy_path: /opt/{{ app_name }}
+    docker_compose_version: "v2.24.0"
+    
+  tasks:
+    - name: Gather facts
+      setup:
+        gather_subset:
+          - network
+          - hardware
+          - virtual
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install required system packages
+      apt:
+        name:
+          - curl
+          - ca-certificates
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - python3-setuptools
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install Docker
+      block:
+        - name: Add Docker GPG key
+          apt_key:
+            url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+            state: present
+          when: ansible_os_family == "Debian"
+
+        - name: Add Docker repository
+          apt_repository:
+            repo: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+            state: present
+          when: ansible_os_family == "Debian"
+
+        - name: Install Docker packages
+          apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+            state: present
+            update_cache: yes
+          when: ansible_os_family == "Debian"
+      when: docker_check.rc != 0
+
+    - name: Ensure Docker service is started and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ app_user }}"
+        groups: docker
+        append: yes
+      when: app_user != "root"
+
+    - name: Create deployment directory
+      file:
+        path: "{{ deploy_path }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Copy application files
+      synchronize:
+        src: "{{ playbook_dir }}/../"
+        dest: "{{ deploy_path }}"
+        delete: yes
+        exclude:
+          - ".git"
+          - "*.md"
+          - "REVIEW.md"
+          - ".dockerignore"
+          - "deploy.sh"
+          - "ansible"
+          - "__pycache__"
+          - "*.pyc"
+        rsync_opts:
+          - "--chown={{ app_user }}:{{ app_user }}"
+      become: no
+      delegate_to: "{{ inventory_hostname }}"
+
+    - name: Set ownership of deployment directory
+      file:
+        path: "{{ deploy_path }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        recurse: yes
+
+    - name: Check if docker compose is available
+      command: docker compose version
+      register: compose_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install Docker Compose standalone (if plugin not available)
+      block:
+        - name: Download Docker Compose
+          get_url:
+            url: "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-{{ ansible_architecture }}"
+            dest: /usr/local/bin/docker-compose
+            mode: '0755'
+
+        - name: Create symlink for docker-compose
+          file:
+            src: /usr/local/bin/docker-compose
+            dest: /usr/bin/docker-compose
+            state: link
+      when: compose_check.rc != 0
+
+    - name: Stop existing containers
+      command: docker compose down
+      args:
+        chdir: "{{ deploy_path }}"
+      become_user: "{{ app_user }}"
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Build Docker images
+      command: docker compose build {{ '--no-cache' if rebuild_images | default(false) else '' }}
+      args:
+        chdir: "{{ deploy_path }}"
+      become_user: "{{ app_user }}"
+      register: build_result
+      changed_when: build_result.rc == 0
+
+    - name: Start containers
+      command: docker compose up -d
+      args:
+        chdir: "{{ deploy_path }}"
+      become_user: "{{ app_user }}"
+      register: start_result
+      changed_when: start_result.rc == 0
+
+    - name: Wait for service to be healthy
+      uri:
+        url: "http://{{ ansible_default_ipv4.address | default(inventory_hostname) }}:{{ http_port | default(8080) }}/health"
+        status_code: 200
+        timeout: 5
+      register: health_result
+      until: health_result.status == 200
+      retries: 12
+      delay: 5
+      when: check_health | default(true)
+      delegate_to: localhost
+
+    - name: Display deployment status
+      debug:
+        msg:
+          - "Application deployed successfully!"
+          - "Deployment path: {{ deploy_path }}"
+          - "Access URL: http://{{ ansible_default_ipv4.address | default(inventory_hostname) }}:{{ http_port | default(8080) }}"
+          - "Healthcheck: http://{{ ansible_default_ipv4.address | default(inventory_hostname) }}:{{ http_port | default(8080) }}/health"
